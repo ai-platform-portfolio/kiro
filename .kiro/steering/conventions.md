@@ -43,6 +43,22 @@ inclusion: always
 | ArgoCD namespaces | `argocd` on all clusters | |
 | Platform namespaces | match package name | `cert-manager`, `postgres`, `lgtm` |
 
+## Authentication
+
+Prefer OAuth over long-standing credentials everywhere — across the portfolio, local tooling,
+and MCP integrations:
+
+- **OAuth is the default** for any service that supports it (Linear, GitHub, Azure, etc.)
+- **Long-standing API keys or tokens are only acceptable where OAuth is not supported**
+- Keys that must exist (e.g. service-to-service where OAuth is unsupported) go in Azure Key
+  Vault or equivalent secrets manager — never in config files, environment variables baked
+  into images, or Git
+- Local developer tooling (MCP servers, CLI auth) follows the same rule — use OAuth device
+  flow or browser flow rather than personal API keys where the option exists
+- Workload identity / federated credentials (OIDC) are preferred over static keys for
+  any Azure service-to-service auth (this is already the pattern in the platform via ESO
+  + managed identity)
+
 ## Git
 
 - Branch naming: `feat/<scope>`, `chore/<scope>`, `fix/<scope>`
@@ -50,6 +66,30 @@ inclusion: always
 - `main` is the production branch — Argo syncs from `main`
 - Feature branches used for all changes, merged via PR
 - No secrets in Git, ever
+
+## GitHub automation (Kiro sessions)
+
+Kiro must operate autonomously with GitHub — never suggest manual workarounds for
+GitHub operations. Use the GitHub REST API directly via `curl` + `gh auth token`
+rather than relying on `gh` CLI commands, which can hang in non-interactive sessions.
+
+Standard flow for any code change:
+1. Create a Linear issue (via Linear MCP)
+2. Create a branch named from the issue (`michaelalinks/ai-<id>-<slug>`)
+3. Make changes, commit with issue reference
+4. Push branch
+5. Create PR via GitHub REST API:
+   ```sh
+   curl -s -X POST \
+     -H "Authorization: Bearer $(gh auth token)" \
+     -H "Accept: application/vnd.github+json" \
+     https://api.github.com/repos/<org>/<repo>/pulls \
+     -d '{"title":"...","body":"Closes AI-<id>. ...","head":"<branch>","base":"main"}'
+   ```
+6. Confirm PR URL from API response
+
+Every repo in the org must have the Linear issue check workflow before PRs are raised.
+New repos get the shared workflow added as the first PR.
 
 ## Documentation standard
 

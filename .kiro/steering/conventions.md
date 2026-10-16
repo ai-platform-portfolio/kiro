@@ -67,6 +67,30 @@ and MCP integrations:
 - Feature branches used for all changes, merged via PR
 - No secrets in Git, ever
 
+## GitHub automation (Kiro sessions)
+
+Kiro must operate autonomously with GitHub — never suggest manual workarounds for
+GitHub operations. Use the GitHub REST API directly via `curl` + `gh auth token`
+rather than relying on `gh` CLI commands, which can hang in non-interactive sessions.
+
+Standard flow for any code change:
+1. Create a Linear issue (via Linear MCP)
+2. Create a branch named from the issue (`michaelalinks/ai-<id>-<slug>`)
+3. Make changes, commit with issue reference
+4. Push branch
+5. Create PR via GitHub REST API:
+   ```sh
+   curl -s -X POST \
+     -H "Authorization: Bearer $(gh auth token)" \
+     -H "Accept: application/vnd.github+json" \
+     https://api.github.com/repos/<org>/<repo>/pulls \
+     -d '{"title":"...","body":"Closes AI-<id>. ...","head":"<branch>","base":"main"}'
+   ```
+6. Confirm PR URL from API response
+
+Every repo in the org must have the Linear issue check workflow before PRs are raised.
+New repos get the shared workflow added as the first PR.
+
 ## Documentation standard
 
 Every module and package has a README that covers:

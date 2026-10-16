@@ -43,6 +43,22 @@ inclusion: always
 | ArgoCD namespaces | `argocd` on all clusters | |
 | Platform namespaces | match package name | `cert-manager`, `postgres`, `lgtm` |
 
+## Authentication
+
+Prefer OAuth over long-standing credentials everywhere — across the portfolio, local tooling,
+and MCP integrations:
+
+- **OAuth is the default** for any service that supports it (Linear, GitHub, Azure, etc.)
+- **Long-standing API keys or tokens are only acceptable where OAuth is not supported**
+- Keys that must exist (e.g. service-to-service where OAuth is unsupported) go in Azure Key
+  Vault or equivalent secrets manager — never in config files, environment variables baked
+  into images, or Git
+- Local developer tooling (MCP servers, CLI auth) follows the same rule — use OAuth device
+  flow or browser flow rather than personal API keys where the option exists
+- Workload identity / federated credentials (OIDC) are preferred over static keys for
+  any Azure service-to-service auth (this is already the pattern in the platform via ESO
+  + managed identity)
+
 ## Git
 
 - Branch naming: `feat/<scope>`, `chore/<scope>`, `fix/<scope>`
